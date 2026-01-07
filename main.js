@@ -1,23 +1,14 @@
 /***********************
- * Firebase 初期化
+ * Firebase 初期化（Compat ONLY）
  ***********************/
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyA-u--fB_d8W6zRTJYj4PLyHc61pNQpKjQ",
   authDomain: "dog-family-videos.firebaseapp.com",
   projectId: "dog-family-videos",
-  storageBucket: "dog-family-videos.firebasestorage.app",
+  storageBucket: "dog-family-videos.appspot.com",
   messagingSenderId: "727646533912",
   appId: "1:727646533912:web:2318a70106647f75d0466d"
 };
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -67,9 +58,11 @@ async function initViewer() {
       ></iframe>
       <div class="title">${v.title}</div>
       <div class="date">
-        ${v.createdAt
-          ? new Date(v.createdAt.seconds * 1000).toLocaleDateString()
-          : ""}
+        ${
+          v.createdAt
+            ? new Date(v.createdAt.seconds * 1000).toLocaleDateString()
+            : ""
+        }
       </div>
     `;
     root.appendChild(div);
@@ -100,14 +93,12 @@ async function addVideo() {
     return;
   }
 
-  // --- YouTube URL 解析（完全対応） ---
+  // YouTube URL 解析
   let videoId = null;
 
-  // 通常URL: https://www.youtube.com/watch?v=xxxx
   let m = url.match(/v=([^&]+)/);
   if (m) videoId = m[1];
 
-  // 短縮URL: https://youtu.be/xxxx
   if (!videoId) {
     m = url.match(/youtu\.be\/([^?]+)/);
     if (m) videoId = m[1];
