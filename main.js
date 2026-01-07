@@ -1,14 +1,23 @@
 /***********************
  * Firebase 初期化
  ***********************/
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "あなたの apiKey",
-  authDomain: "あなたの authDomain",
-  projectId: "あなたの projectId",
-  storageBucket: "あなたの storageBucket",
-  messagingSenderId: "あなたの messagingSenderId",
-  appId: "あなたの appId"
+  apiKey: "AIzaSyA-u--fB_d8W6zRTJYj4PLyHc61pNQpKjQ",
+  authDomain: "dog-family-videos.firebaseapp.com",
+  projectId: "dog-family-videos",
+  storageBucket: "dog-family-videos.firebasestorage.app",
+  messagingSenderId: "727646533912",
+  appId: "1:727646533912:web:2318a70106647f75d0466d"
 };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
