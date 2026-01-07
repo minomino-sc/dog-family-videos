@@ -1,148 +1,97 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🐶 オトちゃん動画 🐶</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🐶 オトちゃん動画 🐶</title>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont;
-      background: #f5f7fb;
-      margin: 0;
-      padding: 16px;
-    }
-    h1 {
-      font-size: 20px;
-      margin-bottom: 12px;
-    }
-    #searchBar {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 12px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    .video {
-      background: #fff;
-      border-radius: 8px;
-      padding: 8px;
-      margin-bottom: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    }
-    iframe, img {
-      width: 100%;
-      border-radius: 6px;
-    }
-    .title {
-      font-weight: 600;
-      margin-top: 6px;
-    }
-    .date {
-      font-size: 12px;
-      color: #666;
-    }
-    details {
-      margin-bottom: 12px;
-    }
-    summary {
-      font-weight: 600;
-      cursor: pointer;
-      padding: 6px;
-      background: #e0e7ff;
-      border-radius: 6px;
-    }
-  </style>
+<style>
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    background: #f5f7fb;
+    margin: 0;
+    padding: 16px;
+  }
+  h1 {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+  #searchBar {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  .video {
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  iframe, img {
+    width: 100%;
+    border-radius: 6px;
+  }
+  .title {
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .date {
+    font-size: 12px;
+    color: #666;
+  }
+  details {
+    margin-bottom: 12px;
+  }
+  summary {
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px;
+    background: #e0e7ff;
+    border-radius: 6px;
+  }
+</style>
 </head>
 <body>
 
 <h1>🐶 オトちゃん動画</h1>
 
-<input type="text" id="searchBar" placeholder="動画タイトル・タグで検索..." />
+<!-- 検索バー -->
+<input type="text" id="searchBar" placeholder="タイトルで検索..." />
 
+<!-- 動画一覧 -->
 <div id="videos">読み込み中...</div>
 
+<script src="main.js"></script>
 <script>
-async function initViewer() {
-  const videosDiv = document.getElementById("videos");
+  // main.js の initViewer を呼び出す
+  initViewer();
+
+  // 検索バー連動（タイトルで絞り込み）
   const searchInput = document.getElementById("searchBar");
-
-  // Firestoreから動画リスト取得（例）
-  const videoData = await getVideoList(); 
-
-  // 日付ごとにまとめる
-  const grouped = {};
-  videoData.forEach(v => {
-    if(!grouped[v.date]) grouped[v.date] = [];
-    grouped[v.date].push(v);
-  });
-
-  // HTML作成関数
-  function renderVideos(filter="") {
-    videosDiv.innerHTML = "";
-    for(const date of Object.keys(grouped).sort((a,b)=>b.localeCompare(a))) {
-      const details = document.createElement("details");
-      details.open = false;
-      const summary = document.createElement("summary");
-      summary.textContent = date + " の動画";
-      details.appendChild(summary);
-
-      grouped[date].forEach(v=>{
-        // フィルター判定（タイトル or タグに検索文字列が含まれる場合のみ表示）
-        if(filter && !(
-          v.title.toLowerCase().includes(filter.toLowerCase()) ||
-          (v.tags && v.tags.join(" ").toLowerCase().includes(filter.toLowerCase()))
-        )) return;
-
-        const div = document.createElement("div");
-        div.className = "video";
-
-        // サムネイル + 再生クリック
-        const thumb = document.createElement("img");
-        thumb.src = `https://img.youtube.com/vi/${v.url.split('/').pop()}/hqdefault.jpg`; // YouTubeサムネ
-        thumb.style.cursor = "pointer";
-        thumb.onclick = () => {
-          div.innerHTML = `<iframe src="${v.url}" frameborder="0" allowfullscreen></iframe>`;
-        }
-        div.appendChild(thumb);
-
-        const title = document.createElement("div");
-        title.className = "title";
-        title.textContent = v.title;
-        div.appendChild(title);
-
-        details.appendChild(div);
+  searchInput.addEventListener("input", e => {
+    const filter = e.target.value.toLowerCase();
+    document.querySelectorAll("#videos details").forEach(details => {
+      let hasVisible = false;
+      details.querySelectorAll(".video").forEach(v => {
+        const title = v.querySelector(".title")?.textContent.toLowerCase() || "";
+        const match = title.includes(filter);
+        v.style.display = match ? "" : "none";
+        if (match) hasVisible = true;
       });
-
-      // 子動画がある場合のみ表示
-      if(details.querySelectorAll(".video").length > 0){
-        videosDiv.appendChild(details);
-      }
-    }
-  }
-
-  renderVideos(); // 初期表示
-
-  // 検索バーイベント
-  searchInput.addEventListener("input", e=>{
-    renderVideos(e.target.value);
+      // 子動画が1つも表示されない場合は折りたたみごと非表示
+      details.style.display = hasVisible ? "" : "none";
+    });
   });
-}
 
-// 例：Firestoreから動画を取得する関数
-async function getVideoList(){
-  const db = firebase.firestore();
-  const snapshot = await db.collection("videos").get();
-  // ドキュメント例: { title: "散歩動画", date: "2026-01-08", url: "https://www.youtube.com/embed/xxxx", tags:["散歩","庭"] }
-  return snapshot.docs.map(doc=>doc.data());
-}
-
-initViewer();
+  // サムネイルクリックで iframe に切り替える処理は main.js 内で対応済み
 </script>
 
 </body>
