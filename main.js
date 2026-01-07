@@ -2,12 +2,12 @@
  * Firebase 初期化
  ***********************/
 const firebaseConfig = {
-  apiKey: "ここを自分のに",
-  authDomain: "ここを自分のに",
-  projectId: "ここを自分のに",
-  storageBucket: "ここを自分のに",
-  messagingSenderId: "ここを自分のに",
-  appId: "ここを自分のに"
+  apiKey: "あなたの apiKey",
+  authDomain: "あなたの authDomain",
+  projectId: "あなたの projectId",
+  storageBucket: "あなたの storageBucket",
+  messagingSenderId: "あなたの messagingSenderId",
+  appId: "あなたの appId"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -17,12 +17,12 @@ const db = firebase.firestore();
  * 共通：URLキー取得
  ***********************/
 function getKey() {
-  const p = new URLSearchParams(location.search);
-  return p.get("key");
+  const params = new URLSearchParams(location.search);
+  return params.get("key");
 }
 
 /***********************
- * 家族用：一覧表示
+ * 家族用：動画一覧表示
  ***********************/
 async function initViewer() {
   const key = getKey();
@@ -31,13 +31,15 @@ async function initViewer() {
     return;
   }
 
+  const root = document.getElementById("videos");
+  root.textContent = "読み込み中...";
+
   const snap = await db
     .collection("videos")
     .where("key", "==", key)
     .orderBy("createdAt", "desc")
     .get();
 
-  const root = document.getElementById("videos");
   root.innerHTML = "";
 
   if (snap.empty) {
@@ -50,10 +52,16 @@ async function initViewer() {
     const div = document.createElement("div");
     div.className = "video";
     div.innerHTML = `
-      <iframe src="https://www.youtube.com/embed/${v.videoId}"
-        allowfullscreen></iframe>
+      <iframe
+        src="https://www.youtube.com/embed/${v.videoId}"
+        allowfullscreen
+      ></iframe>
       <div class="title">${v.title}</div>
-      <div class="date">${new Date(v.createdAt.seconds * 1000).toLocaleDateString()}</div>
+      <div class="date">
+        ${v.createdAt
+          ? new Date(v.createdAt.seconds * 1000).toLocaleDateString()
+          : ""}
+      </div>
     `;
     root.appendChild(div);
   });
@@ -69,29 +77,46 @@ async function addVideo() {
     return;
   }
 
-  const title = document.getElementById("title").value.trim();
-  const url = document.getElementById("url").value.trim();
+  const titleInput = document.getElementById("title");
+  const urlInput = document.getElementById("url");
   const msg = document.getElementById("msg");
+
+  const title = titleInput.value.trim();
+  const url = urlInput.value.trim();
+
+  msg.textContent = "";
 
   if (!title || !url) {
     msg.textContent = "未入力があります";
     return;
   }
 
-  const m = url.match(/v=([^&]+)/);
-  if (!m) {
+  // --- YouTube URL 解析（完全対応） ---
+  let videoId = null;
+
+  // 通常URL: https://www.youtube.com/watch?v=xxxx
+  let m = url.match(/v=([^&]+)/);
+  if (m) videoId = m[1];
+
+  // 短縮URL: https://youtu.be/xxxx
+  if (!videoId) {
+    m = url.match(/youtu\.be\/([^?]+)/);
+    if (m) videoId = m[1];
+  }
+
+  if (!videoId) {
     msg.textContent = "YouTube URL が正しくありません";
     return;
   }
 
   await db.collection("videos").add({
-    key,
-    title,
-    videoId: m[1],
+    key: key,
+    title: title,
+    videoId: videoId,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
   msg.textContent = "登録しました 🎉";
-  document.getElementById("title").value = "";
-  document.getElementById("url").value = "";
+  titleInput.value = "";
+  urlInput.value = "";
 }
