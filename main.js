@@ -37,7 +37,6 @@ async function initViewer() {
   const snap = await db
     .collection("videos")
     .where("key", "==", key)
-    .orderBy("createdAt", "desc")
     .get();
 
   root.innerHTML = "";
