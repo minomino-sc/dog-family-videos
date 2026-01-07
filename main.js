@@ -103,23 +103,31 @@ async function addVideo() {
       msg.textContent = "未入力があります";
       return;
     }
+    
+// YouTube URL 解析（通常・短縮・ショート対応）
+let videoId = null;
 
-    // YouTube URL 解析
-    let videoId = null;
+// 通常URL: https://www.youtube.com/watch?v=xxxx
+let m = url.match(/v=([^&]+)/);
+if (m) videoId = m[1];
 
-    let m = url.match(/v=([^&]+)/);
-    if (m) videoId = m[1];
+// 短縮URL: https://youtu.be/xxxx
+if (!videoId) {
+  m = url.match(/youtu\.be\/([^?]+)/);
+  if (m) videoId = m[1];
+}
 
-    if (!videoId) {
-      m = url.match(/youtu\.be\/([^?]+)/);
-      if (m) videoId = m[1];
-    }
+// Shorts: https://www.youtube.com/shorts/xxxx
+if (!videoId) {
+  m = url.match(/youtube\.com\/shorts\/([^?]+)/);
+  if (m) videoId = m[1];
+}
 
-    if (!videoId) {
-      msg.textContent = "YouTube URL が正しくありません";
-      return;
-    }
-
+if (!videoId) {
+  msg.textContent = "YouTube URL が正しくありません";
+  return;
+}
+    
     await db.collection("videos").add({
       key: key,
       title: title,
