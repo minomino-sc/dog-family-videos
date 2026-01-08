@@ -28,25 +28,6 @@
     border-radius: 6px;
     border: 1px solid #ccc;
   }
-  .video {
-    background: #fff;
-    border-radius: 8px;
-    padding: 8px;
-    margin-bottom: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  }
-  iframe, img {
-    width: 100%;
-    border-radius: 6px;
-  }
-  .title {
-    font-weight: 600;
-    margin-top: 6px;
-  }
-  .date {
-    font-size: 12px;
-    color: #666;
-  }
   details {
     margin-bottom: 12px;
   }
@@ -56,6 +37,21 @@
     padding: 6px;
     background: #e0e7ff;
     border-radius: 6px;
+  }
+  .video {
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .video img, .video iframe {
+    width: 100%;
+    border-radius: 6px;
+  }
+  .title {
+    font-weight: 600;
+    margin-top: 6px;
   }
 </style>
 </head>
@@ -74,7 +70,7 @@
   // main.js の initViewer を呼び出す
   initViewer();
 
-  // 検索バー連動（タイトルで絞り込み）
+  // 検索バー連動
   const searchInput = document.getElementById("searchBar");
   searchInput.addEventListener("input", e => {
     const filter = e.target.value.toLowerCase();
@@ -86,12 +82,9 @@
         v.style.display = match ? "" : "none";
         if (match) hasVisible = true;
       });
-      // 子動画が1つも表示されない場合は折りたたみごと非表示
       details.style.display = hasVisible ? "" : "none";
     });
   });
-
-  // サムネイルクリックで iframe に切り替える処理は main.js 内で対応済み
 </script>
 
 </body>
