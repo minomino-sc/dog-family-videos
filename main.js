@@ -14,7 +14,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 /***********************
- * 共通：URLキー取得
+ * URLキー取得
  ***********************/
 function getKey() {
   const params = new URLSearchParams(location.search);
@@ -22,7 +22,7 @@ function getKey() {
 }
 
 /***********************
- * 家族用：動画一覧表示
+ * 家族用：動画一覧表示（折りたたみ＋サムネイル）
  ***********************/
 async function initViewer() {
   const root = document.getElementById("videos");
@@ -36,11 +36,7 @@ async function initViewer() {
 
     root.textContent = "読み込み中...";
 
-    const snap = await db
-      .collection("videos")
-      .where("key", "==", key)
-      .get();
-
+    const snap = await db.collection("videos").where("key", "==", key).get();
     root.innerHTML = "";
 
     if (snap.empty) {
@@ -48,39 +44,65 @@ async function initViewer() {
       return;
     }
 
-    snap.forEach(doc => {
-      const v = doc.data();
+    const videos = snap.docs.map(doc => doc.data());
 
-      // 念のため videoId チェック
-      if (!v.videoId) return;
-
-      const div = document.createElement("div");
-      div.className = "video";
-      div.innerHTML = `
-        <iframe
-          src="https://www.youtube.com/embed/${v.videoId}"
-          allowfullscreen
-        ></iframe>
-        <div class="title">${v.title || ""}</div>
-        <div class="date">
-          ${
-            v.createdAt
-              ? new Date(v.createdAt.seconds * 1000).toLocaleDateString()
-              : ""
-          }
-        </div>
-      `;
-      root.appendChild(div);
+    // 日付ごとにグループ化
+    const grouped = {};
+    videos.forEach(v => {
+      const dateStr = v.createdAt
+        ? new Date(v.createdAt.seconds * 1000).toLocaleDateString()
+        : "不明日付";
+      if (!grouped[dateStr]) grouped[dateStr] = [];
+      grouped[dateStr].push(v);
     });
 
+    Object.keys(grouped)
+      .sort((a,b)=>b.localeCompare(a))
+      .forEach(date => {
+        const details = document.createElement("details");
+        details.open = false;
+
+        const summary = document.createElement("summary");
+        summary.textContent = date + " の動画";
+        details.appendChild(summary);
+
+        grouped[date].forEach(v => {
+          if (!v.videoId) return;
+
+          const div = document.createElement("div");
+          div.className = "video";
+
+          // サムネイル表示
+          const thumb = document.createElement("img");
+          thumb.src = `https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`;
+          thumb.style.cursor = "pointer";
+
+          // クリックで iframe に切り替え
+          thumb.onclick = () => {
+            div.innerHTML = `<iframe src="https://www.youtube.com/embed/${v.videoId}" allowfullscreen></iframe>
+                             <div class="title">${v.title || ""}</div>`;
+          };
+
+          div.appendChild(thumb);
+
+          const title = document.createElement("div");
+          title.className = "title";
+          title.textContent = v.title || "";
+          div.appendChild(title);
+
+          details.appendChild(div);
+        });
+
+        root.appendChild(details);
+      });
+
   } catch (e) {
-    // iPhone Safari でも必ず見える
     root.textContent = "エラーが発生しました: " + e.message;
   }
 }
 
 /***********************
- * 管理用：動画登録
+ * 管理用：動画登録（以前のまま）
  ***********************/
 async function addVideo() {
   try {
@@ -104,29 +126,26 @@ async function addVideo() {
       return;
     }
     
-// YouTube URL 解析（通常・短縮・ショート対応）
-let videoId = null;
+    // YouTube URL 解析
+    let videoId = null;
 
-// 通常URL: https://www.youtube.com/watch?v=xxxx
-let m = url.match(/v=([^&]+)/);
-if (m) videoId = m[1];
+    let m = url.match(/v=([^&]+)/);
+    if (m) videoId = m[1];
 
-// 短縮URL: https://youtu.be/xxxx
-if (!videoId) {
-  m = url.match(/youtu\.be\/([^?]+)/);
-  if (m) videoId = m[1];
-}
+    if (!videoId) {
+      m = url.match(/youtu\.be\/([^?]+)/);
+      if (m) videoId = m[1];
+    }
 
-// Shorts: https://www.youtube.com/shorts/xxxx
-if (!videoId) {
-  m = url.match(/youtube\.com\/shorts\/([^?]+)/);
-  if (m) videoId = m[1];
-}
+    if (!videoId) {
+      m = url.match(/youtube\.com\/shorts\/([^?]+)/);
+      if (m) videoId = m[1];
+    }
 
-if (!videoId) {
-  msg.textContent = "YouTube URL が正しくありません";
-  return;
-}
+    if (!videoId) {
+      msg.textContent = "YouTube URL が正しくありません";
+      return;
+    }
     
     await db.collection("videos").add({
       key: key,
