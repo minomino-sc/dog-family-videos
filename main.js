@@ -63,11 +63,12 @@ async function initViewer(){
       header.innerHTML = `🐾 ${date}<span>${groups[date].length}件</span>`;
 
       const box = document.createElement("div");
+      box.style.display = "none"; // ← ★これが無かった（初期は折りたたみ）
 
       header.onclick=()=>{
-        box.style.display = box.style.display==="none"?"":"none";
+        box.style.display = box.style.display==="none" ? "" : "none";
         if(soundOn){
-          dogSound.currentTime=0;
+          dogSound.currentTime = 0;
           dogSound.play().catch(()=>{});
         }
       };
