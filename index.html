@@ -28,12 +28,25 @@ body{
   pointer-events:none;
 }
 
-h1 {
-  font-size: 20px;
-  margin-bottom: 12px;
-  text-align: center; /* ← 追加 */
+/* 🐶 ページタイトル（写真付き） */
+.page-title{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin-bottom:14px;
 }
-  
+.page-title img{
+  width:48px;
+  height:auto;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.25));
+}
+.page-title h1{
+  font-size:20px;
+  margin:0;
+  text-align:center;
+}
+
 /* 🔍 検索枠（動画カードと同幅） */
 .search-wrap{
   background:#fff;
@@ -86,7 +99,11 @@ iframe{
 <body>
 <div class="paw-bg">🐾</div>
 
-<h1>🐶 オトちゃん動画 🐶</h1>
+<!-- 🐶 写真付きタイトル -->
+<div class="page-title">
+  <img src="IMG_3670.jpeg" alt="オトちゃん">
+  <h1>オトちゃん動画</h1>
+</div>
 
 <div class="search-wrap">
   🔍 <input id="search" placeholder="タイトルで検索">
