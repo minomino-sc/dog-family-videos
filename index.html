@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>🐶 家族用ワンちゃん動画</title>
 
-  <!-- Firebase Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      font-family: system-ui, -apple-system;
       background: #F6EFE6;
       margin: 0;
       padding: 16px;
       color: #3B2F2F;
+      overflow-x: hidden;
     }
 
     h1 {
@@ -23,33 +23,64 @@
       margin-bottom: 12px;
     }
 
-    /* 共通カード */
+    .paw-bg {
+      position: fixed;
+      font-size: 160px;
+      opacity: 0.08;
+      pointer-events: none;
+      z-index: 0;
+    }
+
     .card {
       background: #fff;
       border-radius: 14px;
       padding: 12px;
       margin-bottom: 14px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      position: relative;
+      z-index: 1;
     }
 
-    /* 検索 */
     .search-input {
       width: 100%;
       padding: 10px;
       font-size: 16px;
       border-radius: 10px;
       border: 1px solid #ddd;
-      box-sizing: border-box;
     }
 
-    /* 日付ヘッダ */
+    /* 🔊 消音ボタン */
+    .sound-toggle {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      background: #fff;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      cursor: pointer;
+      z-index: 10;
+      user-select: none;
+    }
+
     .date-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
       font-weight: 600;
-      margin: 16px 0 8px;
+      margin: 18px 0 8px;
+    }
+
+    .date-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .count {
@@ -71,21 +102,52 @@
 </head>
 <body>
 
+<div id="paw" class="paw-bg">🐾</div>
+
+<!-- 🔊 消音トグル -->
+<div id="soundToggle" class="sound-toggle">🔊</div>
+
+<!-- 🐶 SE -->
+<audio id="dogSound" preload="auto">
+  <source src="https://assets.mixkit.co/active_storage/sfx/1045/1045-preview.mp3" type="audio/mpeg">
+</audio>
+
 <h1>🐶 家族用ワンちゃん動画</h1>
 
-<!-- 🔍 検索（動画と同じ枠） -->
 <div class="card">
-  <input
-    id="search"
-    class="search-input"
-    placeholder="🔍 タイトルで検索"
-  />
+  <input id="search" class="search-input" placeholder="🔍 タイトルで検索">
 </div>
 
 <div id="videos">読み込み中...</div>
 
 <script src="main.js"></script>
+
 <script>
+  /* 🐾 肉球ランダム */
+  const paw = document.getElementById("paw");
+  paw.style.left = (Math.random() * 70 + 10) + "vw";
+  paw.style.top  = (Math.random() * 60 + 20) + "vh";
+
+  /* 🔊 サウンド管理 */
+  const sound = document.getElementById("dogSound");
+  const toggle = document.getElementById("soundToggle");
+
+  let soundOn = localStorage.getItem("dogSound") !== "off";
+  toggle.textContent = soundOn ? "🔊" : "🔇";
+
+  toggle.onclick = () => {
+    soundOn = !soundOn;
+    localStorage.setItem("dogSound", soundOn ? "on" : "off");
+    toggle.textContent = soundOn ? "🔊" : "🔇";
+  };
+
+  /* main.js から呼ばれる用 */
+  window.playDogSound = () => {
+    if (!soundOn) return;
+    sound.currentTime = 0;
+    sound.play().catch(()=>{});
+  };
+
   initViewer();
 </script>
 
