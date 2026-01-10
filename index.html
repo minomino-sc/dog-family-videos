@@ -18,36 +18,43 @@
       color: #3B2F2F;
     }
 
-    .paw-bg {
-      position: fixed;
-      right: -40px;
-      bottom: -40px;
-      font-size: 180px;
-      opacity: 0.08;
-      pointer-events: none;
-    }
-
     h1 {
       font-size: 20px;
       margin-bottom: 12px;
     }
 
-    /* 🔍 検索 */
-    #search {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #D6C6B8;
-      margin-bottom: 16px;
-      font-size: 15px;
-    }
-
-    .video {
+    /* 共通カード */
+    .card {
       background: #fff;
       border-radius: 14px;
       padding: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    /* 検索 */
+    .search-input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      box-sizing: border-box;
+    }
+
+    /* 日付ヘッダ */
+    .date-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 16px 0 8px;
+    }
+
+    .count {
+      font-size: 12px;
+      color: #7A5C52;
     }
 
     iframe {
@@ -58,23 +65,22 @@
 
     .title {
       font-weight: 600;
-      margin-top: 8px;
-    }
-
-    .date-header {
-      font-weight: 600;
-      margin: 14px 0 6px;
-      cursor: pointer;
+      margin-top: 6px;
     }
   </style>
 </head>
 <body>
 
-<div class="paw-bg">🐾</div>
-
 <h1>🐶 家族用ワンちゃん動画</h1>
 
-<input id="search" placeholder="🔍 タイトルで検索" />
+<!-- 🔍 検索（動画と同じ枠） -->
+<div class="card">
+  <input
+    id="search"
+    class="search-input"
+    placeholder="🔍 タイトルで検索"
+  />
+</div>
 
 <div id="videos">読み込み中...</div>
 
