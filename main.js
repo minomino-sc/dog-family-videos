@@ -17,29 +17,28 @@ const db = firebase.firestore();
  * URLキー取得
  ***********************/
 function getKey() {
-  const params = new URLSearchParams(location.search);
-  return params.get("key");
+  return new URLSearchParams(location.search).get("key");
 }
 
 /***********************
- * 家族用：動画一覧表示
+ * 家族用：動画一覧表示（安全版）
  ***********************/
 async function initViewer() {
   const key = getKey();
+  const root = document.getElementById("videos");
+
   if (!key) {
-    document.getElementById("videos").textContent = "アクセスキーがありません";
+    root.textContent = "アクセスキーがありません";
     return;
   }
 
-  const root = document.getElementById("videos");
   root.textContent = "読み込み中...";
 
   try {
     const snap = await db
       .collection("videos")
       .where("key", "==", key)
-      .orderBy("createdAt", "desc")
-      .get();
+      .get(); // ← orderBy を削除（重要）
 
     root.innerHTML = "";
 
@@ -57,7 +56,6 @@ async function initViewer() {
       div.innerHTML = `
         <iframe
           src="https://www.youtube.com/embed/${v.videoId}"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
         ></iframe>
         <div class="title">${v.title}</div>
@@ -70,28 +68,20 @@ async function initViewer() {
     });
 
   } catch (e) {
-    console.error(e);
-    root.textContent = "読み込みに失敗しました";
+    console.error("Firestore error:", e);
+    root.textContent = "動画の読み込みに失敗しました";
   }
 }
 
 /***********************
- * 管理用：動画登録
+ * 管理用：動画登録（ショート対応）
  ***********************/
 async function addVideo() {
   const key = getKey();
-  if (!key) {
-    alert("管理キーがありません");
-    return;
-  }
-
-  const titleInput = document.getElementById("title");
-  const urlInput = document.getElementById("url");
-  const msg = document.getElementById("msg");
+  if (!key) return alert("管理キーがありません");
 
   const title = titleInput.value.trim();
   const url = urlInput.value.trim();
-
   msg.textContent = "";
 
   if (!title || !url) {
@@ -99,7 +89,6 @@ async function addVideo() {
     return;
   }
 
-  // YouTube URL解析（通常・短縮・ショート対応）
   let videoId = null;
 
   let m = url.match(/v=([^&]+)/);
@@ -121,13 +110,13 @@ async function addVideo() {
   }
 
   await db.collection("videos").add({
-    key: key,
-    title: title,
-    videoId: videoId,
+    key,
+    title,
+    videoId,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  msg.textContent = "登録しました 🐶";
+  msg.textContent = "登録しました 🐾";
   titleInput.value = "";
   urlInput.value = "";
 }
