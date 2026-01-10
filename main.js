@@ -14,31 +14,14 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 /***********************
- * URLキー取得
+ * 🔑 key 取得（必須）
  ***********************/
 function getKey() {
   return new URLSearchParams(location.search).get("key");
 }
 
 /***********************
- * 🐶 ワン！SE（消音対応）
- ***********************/
-let muted = false;
-
-window.toggleMute = function () {
-  muted = !muted;
-};
-
-window.playDogSound = function () {
-  if (muted) return;
-  const audio = document.getElementById("dog-sound");
-  if (!audio) return;
-  audio.currentTime = 0;
-  audio.play().catch(() => {});
-};
-
-/***********************
- * 家族用：動画一覧 + 検索 + 日付折りたたみ
+ * 家族用：動画一覧 + 検索
  ***********************/
 async function initViewer() {
   const key = getKey();
@@ -66,59 +49,24 @@ async function initViewer() {
     const videos = [];
     snap.forEach(doc => videos.push(doc.data()));
 
-    // 🔽 新しい日付順に
-    videos.sort((a, b) => {
-      const ta = a.createdAt?.seconds || 0;
-      const tb = b.createdAt?.seconds || 0;
-      return tb - ta;
-    });
-
-    function groupByDate(list) {
-      const map = {};
-      list.forEach(v => {
-        if (!v.createdAt) return;
-        const d = new Date(v.createdAt.seconds * 1000);
-        const key = d.toLocaleDateString("ja-JP");
-        if (!map[key]) map[key] = [];
-        map[key].push(v);
-      });
-      return map;
-    }
-
     function render(list) {
       root.innerHTML = "";
-      const grouped = groupByDate(list);
-
-      Object.keys(grouped).forEach(date => {
-        const header = document.createElement("div");
-        header.style.fontWeight = "700";
-        header.style.margin = "16px 0 6px";
-        header.style.cursor = "pointer";
-        header.innerHTML = `🐾 ${date} <span style="float:right">${grouped[date].length}件</span>`;
-
-        const body = document.createElement("div");
-        body.style.display = "none";
-
-        header.onclick = () => {
-          playDogSound();
-          body.style.display = body.style.display === "none" ? "block" : "none";
-        };
-
-        grouped[date].forEach(v => {
-          const div = document.createElement("div");
-          div.className = "video";
-          div.innerHTML = `
-            <iframe
-              src="https://www.youtube.com/embed/${v.videoId}"
-              allowfullscreen
-            ></iframe>
-            <div class="title">${v.title}</div>
-          `;
-          body.appendChild(div);
-        });
-
-        root.appendChild(header);
-        root.appendChild(body);
+      list.forEach(v => {
+        const div = document.createElement("div");
+        div.className = "video";
+        div.innerHTML = `
+          <iframe
+            src="https://www.youtube.com/embed/${v.videoId}"
+            allowfullscreen
+          ></iframe>
+          <div class="title">${v.title}</div>
+          <div class="date">
+            ${v.createdAt
+              ? new Date(v.createdAt.seconds * 1000).toLocaleDateString()
+              : ""}
+          </div>
+        `;
+        root.appendChild(div);
       });
     }
 
@@ -128,10 +76,11 @@ async function initViewer() {
     if (searchInput) {
       searchInput.addEventListener("input", () => {
         const q = searchInput.value.trim().toLowerCase();
-        const filtered = videos.filter(v =>
-          v.title.toLowerCase().includes(q)
+        render(
+          videos.filter(v =>
+            v.title.toLowerCase().includes(q)
+          )
         );
-        render(filtered);
       });
     }
 
@@ -142,7 +91,7 @@ async function initViewer() {
 }
 
 /***********************
- * 管理用：動画登録（通常 / 短縮 / shorts 対応）
+ * 管理用：動画登録
  ***********************/
 async function addVideo() {
   const titleInput = document.getElementById("title");
