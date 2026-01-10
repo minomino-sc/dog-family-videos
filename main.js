@@ -1,148 +1,97 @@
 /***********************
- * Firebase 初期化（Compat）
+ * Firebase 初期化
  ***********************/
-const firebaseConfig = {
+firebase.initializeApp({
   apiKey: "AIzaSyA-u--fB_d8W6zRTJYj4PLyHc61pNQpKjQ",
   authDomain: "dog-family-videos.firebaseapp.com",
-  projectId: "dog-family-videos",
-  storageBucket: "dog-family-videos.firebasestorage.app",
-  messagingSenderId: "727646533912",
-  appId: "1:727646533912:web:2318a70106647f75d0466d"
-};
-
-firebase.initializeApp(firebaseConfig);
+  projectId: "dog-family-videos"
+});
 const db = firebase.firestore();
 
 /***********************
- * 🔑 key 取得（必須）
+ * key 取得
  ***********************/
-function getKey() {
+function getKey(){
   return new URLSearchParams(location.search).get("key");
 }
 
 /***********************
- * 家族用：動画一覧 + 検索
+ * ワン！SE（消音可）
  ***********************/
-async function initViewer() {
+let soundOn = true;
+const dogSound = new Audio("dog.mp3");
+
+/***********************
+ * 一覧表示（検索＋日付折りたたみ）
+ ***********************/
+async function initViewer(){
   const key = getKey();
   const root = document.getElementById("videos");
-  const searchInput = document.getElementById("search");
+  const search = document.getElementById("search");
 
-  if (!key) {
+  if(!key){
     root.textContent = "アクセスキーがありません";
     return;
   }
 
-  root.textContent = "読み込み中...";
+  const snap = await db.collection("videos")
+    .where("key","==",key)
+    .get();
 
-  try {
-    const snap = await db
-      .collection("videos")
-      .where("key", "==", key)
-      .get();
+  if(snap.empty){
+    root.textContent = "動画がありません";
+    return;
+  }
 
-    if (snap.empty) {
-      root.textContent = "まだ動画がありません";
-      return;
-    }
+  const all = [];
+  snap.forEach(d => all.push(d.data()));
 
-    const videos = [];
-    snap.forEach(doc => videos.push(doc.data()));
+  function render(list){
+    root.innerHTML = "";
+    const groups = {};
 
-    function render(list) {
-      root.innerHTML = "";
-      list.forEach(v => {
-        const div = document.createElement("div");
-        div.className = "video";
-        div.innerHTML = `
-          <iframe
-            src="https://www.youtube.com/embed/${v.videoId}"
-            allowfullscreen
-          ></iframe>
+    list.forEach(v=>{
+      const d = v.createdAt
+        ? new Date(v.createdAt.seconds*1000).toLocaleDateString()
+        : "不明";
+      (groups[d] ||= []).push(v);
+    });
+
+    Object.keys(groups).sort().reverse().forEach(date=>{
+      const header = document.createElement("div");
+      header.className="date-header";
+      header.innerHTML = `🐾 ${date}<span>${groups[date].length}件</span>`;
+
+      const box = document.createElement("div");
+
+      header.onclick=()=>{
+        box.style.display = box.style.display==="none"?"":"none";
+        if(soundOn){
+          dogSound.currentTime=0;
+          dogSound.play().catch(()=>{});
+        }
+      };
+
+      groups[date].forEach(v=>{
+        const div=document.createElement("div");
+        div.className="video";
+        div.innerHTML=`
+          <iframe src="https://www.youtube.com/embed/${v.videoId}" allowfullscreen></iframe>
           <div class="title">${v.title}</div>
-          <div class="date">
-            ${v.createdAt
-              ? new Date(v.createdAt.seconds * 1000).toLocaleDateString()
-              : ""}
-          </div>
         `;
-        root.appendChild(div);
+        box.appendChild(div);
       });
-    }
 
-    render(videos);
-
-    // 🔍 検索
-    if (searchInput) {
-      searchInput.addEventListener("input", () => {
-        const q = searchInput.value.trim().toLowerCase();
-        render(
-          videos.filter(v =>
-            v.title.toLowerCase().includes(q)
-          )
-        );
-      });
-    }
-
-  } catch (e) {
-    console.error(e);
-    root.textContent = "動画の読み込みに失敗しました";
-  }
-}
-
-/***********************
- * 管理用：動画登録
- ***********************/
-async function addVideo() {
-  const titleInput = document.getElementById("title");
-  const urlInput = document.getElementById("url");
-  const msg = document.getElementById("msg");
-
-  if (!titleInput || !urlInput || !msg) return;
-
-  const key = getKey();
-  if (!key) {
-    alert("管理キーがありません");
-    return;
+      root.appendChild(header);
+      root.appendChild(box);
+    });
   }
 
-  const title = titleInput.value.trim();
-  const url = urlInput.value.trim();
-  msg.textContent = "";
+  render(all);
 
-  if (!title || !url) {
-    msg.textContent = "未入力があります";
-    return;
-  }
-
-  let videoId = null;
-
-  let m = url.match(/v=([^&]+)/);
-  if (m) videoId = m[1];
-
-  if (!videoId) {
-    m = url.match(/youtu\.be\/([^?]+)/);
-    if (m) videoId = m[1];
-  }
-
-  if (!videoId) {
-    m = url.match(/shorts\/([^?]+)/);
-    if (m) videoId = m[1];
-  }
-
-  if (!videoId) {
-    msg.textContent = "YouTube URL が正しくありません";
-    return;
-  }
-
-  await db.collection("videos").add({
-    key,
-    title,
-    videoId,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  msg.textContent = "登録しました 🐾";
-  titleInput.value = "";
-  urlInput.value = "";
+  /* 🔍 検索 */
+  search.oninput=()=>{
+    const q=search.value.toLowerCase();
+    render(all.filter(v=>v.title.toLowerCase().includes(q)));
+  };
 }
