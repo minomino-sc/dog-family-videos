@@ -21,16 +21,24 @@ function getKey() {
 }
 
 /***********************
- * 日付ラベル生成
+ * 🐶 ワン！SE（消音対応）
  ***********************/
-function formatDate(ts) {
-  if (!ts || !ts.seconds) return "日付不明";
-  const d = new Date(ts.seconds * 1000);
-  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-}
+let muted = false;
+
+window.toggleMute = function () {
+  muted = !muted;
+};
+
+window.playDogSound = function () {
+  if (muted) return;
+  const audio = document.getElementById("dog-sound");
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+};
 
 /***********************
- * 家族用：動画一覧（検索＋日付折りたたみ＋件数）
+ * 家族用：動画一覧 + 検索 + 日付折りたたみ
  ***********************/
 async function initViewer() {
   const key = getKey();
@@ -55,71 +63,72 @@ async function initViewer() {
       return;
     }
 
-    const allVideos = [];
-    snap.forEach(doc => allVideos.push(doc.data()));
+    const videos = [];
+    snap.forEach(doc => videos.push(doc.data()));
 
-    function render(videos) {
-      root.innerHTML = "";
+    // 🔽 新しい日付順に
+    videos.sort((a, b) => {
+      const ta = a.createdAt?.seconds || 0;
+      const tb = b.createdAt?.seconds || 0;
+      return tb - ta;
+    });
 
-      // 📅 日付ごとにグループ化
-      const groups = {};
-      videos.forEach(v => {
-        const date = formatDate(v.createdAt);
-        if (!groups[date]) groups[date] = [];
-        groups[date].push(v);
+    function groupByDate(list) {
+      const map = {};
+      list.forEach(v => {
+        if (!v.createdAt) return;
+        const d = new Date(v.createdAt.seconds * 1000);
+        const key = d.toLocaleDateString("ja-JP");
+        if (!map[key]) map[key] = [];
+        map[key].push(v);
       });
-
-      Object.keys(groups)
-        .sort((a, b) => b.localeCompare(a))
-        .forEach(date => {
-          const list = groups[date];
-
-          // 日付ヘッダ
-          const header = document.createElement("div");
-          header.className = "date-header";
-          header.innerHTML = `
-            <div class="date-left">🐾 ${date}</div>
-            <div class="count">${list.length}件</div>
-          `;
-
-          const listDiv = document.createElement("div");
-
-          list.forEach(v => {
-            const card = document.createElement("div");
-            card.className = "card video";
-            card.innerHTML = `
-              <iframe
-                src="https://www.youtube.com/embed/${v.videoId}"
-                allowfullscreen
-              ></iframe>
-              <div class="title">${v.title}</div>
-            `;
-            listDiv.appendChild(card);
-          });
-
-          // 📅 クリックで開閉 + 🐶 ワン！
-          header.addEventListener("click", () => {
-            listDiv.style.display =
-              listDiv.style.display === "none" ? "" : "none";
-
-            if (window.playDogSound) {
-              window.playDogSound();
-            }
-          });
-
-          root.appendChild(header);
-          root.appendChild(listDiv);
-        });
+      return map;
     }
 
-    // 初期描画
-    render(allVideos);
+    function render(list) {
+      root.innerHTML = "";
+      const grouped = groupByDate(list);
+
+      Object.keys(grouped).forEach(date => {
+        const header = document.createElement("div");
+        header.style.fontWeight = "700";
+        header.style.margin = "16px 0 6px";
+        header.style.cursor = "pointer";
+        header.innerHTML = `🐾 ${date} <span style="float:right">${grouped[date].length}件</span>`;
+
+        const body = document.createElement("div");
+        body.style.display = "none";
+
+        header.onclick = () => {
+          playDogSound();
+          body.style.display = body.style.display === "none" ? "block" : "none";
+        };
+
+        grouped[date].forEach(v => {
+          const div = document.createElement("div");
+          div.className = "video";
+          div.innerHTML = `
+            <iframe
+              src="https://www.youtube.com/embed/${v.videoId}"
+              allowfullscreen
+            ></iframe>
+            <div class="title">${v.title}</div>
+          `;
+          body.appendChild(div);
+        });
+
+        root.appendChild(header);
+        root.appendChild(body);
+      });
+    }
+
+    render(videos);
 
     // 🔍 検索
     if (searchInput) {
       searchInput.addEventListener("input", () => {
         const q = searchInput.value.trim().toLowerCase();
-        const filtered = allVideos.filter(v =>
+        const filtered = videos.filter(v =>
           v.title.toLowerCase().includes(q)
         );
         render(filtered);
@@ -127,13 +136,13 @@ async function initViewer() {
     }
 
   } catch (e) {
-    console.error("Firestore error:", e);
+    console.error(e);
     root.textContent = "動画の読み込みに失敗しました";
   }
 }
 
 /***********************
- * 管理用：動画登録（ショート対応）
+ * 管理用：動画登録（通常 / 短縮 / shorts 対応）
  ***********************/
 async function addVideo() {
   const titleInput = document.getElementById("title");
