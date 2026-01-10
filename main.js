@@ -26,6 +26,7 @@ const dogSound = new Audio("dog.mp3");
  * ・検索
  * ・日付ごと折りたたみ（初期は閉じる）
  * ・日付クリックでワン！
+ * ・最新日付が一番上
  ***********************/
 async function initViewer(){
   const key = getKey();
@@ -58,49 +59,64 @@ async function initViewer(){
 
     function render(list){
       root.innerHTML = "";
+
+      // 日付ごとにまとめる（time を保持）
       const groups = {};
 
-      // 日付でグループ化
       list.forEach(v=>{
-        const d = v.createdAt
-          ? new Date(v.createdAt.seconds * 1000).toLocaleDateString()
-          : "不明";
-        (groups[d] ||= []).push(v);
+        const dateObj = v.createdAt
+          ? new Date(v.createdAt.seconds * 1000)
+          : new Date(0);
+
+        const dateKey = dateObj.toLocaleDateString();
+
+        if(!groups[dateKey]){
+          groups[dateKey] = {
+            time: dateObj.getTime(),
+            items: []
+          };
+        }
+        groups[dateKey].items.push(v);
       });
 
-      // 新しい日付順
-      Object.keys(groups).sort().reverse().forEach(date=>{
-        const header = document.createElement("div");
-        header.className = "date-header";
-        header.innerHTML = `🐾 ${date}<span>${groups[date].length}件</span>`;
+      // 最新日付が一番上
+      Object.values(groups)
+        .sort((a,b) => b.time - a.time)
+        .forEach(group => {
 
-        const box = document.createElement("div");
-        box.style.display = "none"; // ★初期は折りたたみ
+          const date = new Date(group.time).toLocaleDateString();
 
-        header.onclick = () => {
-          box.style.display = box.style.display === "none" ? "" : "none";
-          if(soundOn){
-            dogSound.currentTime = 0;
-            dogSound.play().catch(()=>{});
-          }
-        };
+          const header = document.createElement("div");
+          header.className = "date-header";
+          header.innerHTML = `🐾 ${date}<span>${group.items.length}件</span>`;
 
-        groups[date].forEach(v=>{
-          const div = document.createElement("div");
-          div.className = "video";
-          div.innerHTML = `
-            <iframe
-              src="https://www.youtube.com/embed/${v.videoId}"
-              allowfullscreen>
-            </iframe>
-            <div class="title">${v.title}</div>
-          `;
-          box.appendChild(div);
+          const box = document.createElement("div");
+          box.style.display = "none"; // 初期は折りたたみ
+
+          header.onclick = () => {
+            box.style.display = box.style.display === "none" ? "" : "none";
+            if(soundOn){
+              dogSound.currentTime = 0;
+              dogSound.play().catch(()=>{});
+            }
+          };
+
+          group.items.forEach(v=>{
+            const div = document.createElement("div");
+            div.className = "video";
+            div.innerHTML = `
+              <iframe
+                src="https://www.youtube.com/embed/${v.videoId}"
+                allowfullscreen>
+              </iframe>
+              <div class="title">${v.title}</div>
+            `;
+            box.appendChild(div);
+          });
+
+          root.appendChild(header);
+          root.appendChild(box);
         });
-
-        root.appendChild(header);
-        root.appendChild(box);
-      });
     }
 
     render(all);
@@ -109,9 +125,11 @@ async function initViewer(){
     if(search){
       search.oninput = () => {
         const q = search.value.toLowerCase();
-        render(all.filter(v =>
-          v.title.toLowerCase().includes(q)
-        ));
+        render(
+          all.filter(v =>
+            v.title.toLowerCase().includes(q)
+          )
+        );
       };
     }
 
