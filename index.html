@@ -1,90 +1,61 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>🐶 オトちゃん動画 🐶</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🐶 家族用ワンちゃん動画</title>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
-<style>
-  body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont;
-    background: #f5f7fb;
-    margin: 0;
-    padding: 16px;
-  }
-  h1 {
-    font-size: 20px;
-    margin-bottom: 12px;
-  }
-  #searchBar {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 12px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
-  details {
-    margin-bottom: 12px;
-  }
-  summary {
-    font-weight: 600;
-    cursor: pointer;
-    padding: 6px;
-    background: #e0e7ff;
-    border-radius: 6px;
-  }
-  .video {
-    background: #fff;
-    border-radius: 8px;
-    padding: 8px;
-    margin-bottom: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  }
-  .video img, .video iframe {
-    width: 100%;
-    border-radius: 6px;
-  }
-  .title {
-    font-weight: 600;
-    margin-top: 6px;
-  }
-</style>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      background: #F6EFE6; /* 芝犬カラー */
+      margin: 0;
+      padding: 16px;
+      color: #3B2F2F;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .video {
+      background: #FFFFFF;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    iframe {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 10px;
+    }
+
+    .title {
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    .date {
+      font-size: 12px;
+      color: #7A5C52;
+    }
+  </style>
 </head>
 <body>
 
-<h1>🐶 オトちゃん動画</h1>
-
-<!-- 検索バー -->
-<input type="text" id="searchBar" placeholder="タイトルで検索..." />
-
-<!-- 動画一覧 -->
+<h1>🐶 家族用ワンちゃん動画</h1>
 <div id="videos">読み込み中...</div>
 
 <script src="main.js"></script>
 <script>
-  // main.js の initViewer を呼び出す
   initViewer();
-
-  // 検索バー連動
-  const searchInput = document.getElementById("searchBar");
-  searchInput.addEventListener("input", e => {
-    const filter = e.target.value.toLowerCase();
-    document.querySelectorAll("#videos details").forEach(details => {
-      let hasVisible = false;
-      details.querySelectorAll(".video").forEach(v => {
-        const title = v.querySelector(".title")?.textContent.toLowerCase() || "";
-        const match = title.includes(filter);
-        v.style.display = match ? "" : "none";
-        if (match) hasVisible = true;
-      });
-      details.style.display = hasVisible ? "" : "none";
-    });
-  });
 </script>
 
 </body>
