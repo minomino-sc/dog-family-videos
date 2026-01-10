@@ -16,11 +16,8 @@
       margin: 0;
       padding: 16px;
       color: #3B2F2F;
-      position: relative;
-      overflow-x: hidden;
     }
 
-    /* 🐾 肉球背景 */
     .paw-bg {
       position: fixed;
       right: -40px;
@@ -35,11 +32,21 @@
       margin-bottom: 12px;
     }
 
+    /* 🔍 検索 */
+    #search {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #D6C6B8;
+      margin-bottom: 16px;
+      font-size: 15px;
+    }
+
     .video {
-      background: #FFFFFF;
+      background: #fff;
       border-radius: 14px;
       padding: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     }
 
@@ -54,9 +61,10 @@
       margin-top: 8px;
     }
 
-    .date {
-      font-size: 12px;
-      color: #7A5C52;
+    .date-header {
+      font-weight: 600;
+      margin: 14px 0 6px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -65,6 +73,9 @@
 <div class="paw-bg">🐾</div>
 
 <h1>🐶 家族用ワンちゃん動画</h1>
+
+<input id="search" placeholder="🔍 タイトルで検索" />
+
 <div id="videos">読み込み中...</div>
 
 <script src="main.js"></script>
