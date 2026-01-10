@@ -21,7 +21,7 @@ function getKey() {
 }
 
 /***********************
- * 家族用：動画一覧表示 + 検索
+ * 家族用：動画一覧（検索＋日付折りたたみ）
  ***********************/
 async function initViewer() {
   const key = getKey();
@@ -49,25 +49,60 @@ async function initViewer() {
     const videos = [];
     snap.forEach(doc => videos.push(doc.data()));
 
+    function formatDate(ts) {
+      return ts
+        ? new Date(ts.seconds * 1000).toLocaleDateString()
+        : "日付不明";
+    }
+
     function render(list) {
       root.innerHTML = "";
+
+      // 📅 日付でグループ化
+      const groups = {};
       list.forEach(v => {
-        const div = document.createElement("div");
-        div.className = "video";
-        div.innerHTML = `
-          <iframe src="https://www.youtube.com/embed/${v.videoId}" allowfullscreen></iframe>
-          <div class="title">${v.title}</div>
-          <div class="date">
-            ${v.createdAt ? new Date(v.createdAt.seconds * 1000).toLocaleDateString() : ""}
-          </div>
+        const d = formatDate(v.createdAt);
+        if (!groups[d]) groups[d] = [];
+        groups[d].push(v);
+      });
+
+      Object.keys(groups).forEach(date => {
+        // 日付ヘッダー
+        const header = document.createElement("div");
+        header.textContent = `📅 ${date}`;
+        header.style.cssText = `
+          font-weight:600;
+          margin:14px 0 6px;
+          cursor:pointer;
         `;
-        root.appendChild(div);
+
+        // 折りたたみ領域
+        const box = document.createElement("div");
+        box.style.display = "none";
+
+        header.onclick = () => {
+          box.style.display =
+            box.style.display === "none" ? "block" : "none";
+        };
+
+        groups[date].forEach(v => {
+          const div = document.createElement("div");
+          div.className = "video";
+          div.innerHTML = `
+            <iframe src="https://www.youtube.com/embed/${v.videoId}" allowfullscreen></iframe>
+            <div class="title">${v.title}</div>
+          `;
+          box.appendChild(div);
+        });
+
+        root.appendChild(header);
+        root.appendChild(box);
       });
     }
 
     render(videos);
 
-    // 🔍 検索機能
+    // 🔍 検索（折りたたみ維持）
     if (searchInput) {
       searchInput.addEventListener("input", () => {
         const q = searchInput.value.trim().toLowerCase();
@@ -85,21 +120,17 @@ async function initViewer() {
 }
 
 /***********************
- * 管理用：動画登録（安全版）
+ * 管理用：動画登録（安全）
  ***********************/
 async function addVideo() {
   const titleInput = document.getElementById("title");
   const urlInput = document.getElementById("url");
   const msg = document.getElementById("msg");
 
-  // 👇 管理画面以外では何もしない
   if (!titleInput || !urlInput || !msg) return;
 
   const key = getKey();
-  if (!key) {
-    alert("管理キーがありません");
-    return;
-  }
+  if (!key) return alert("管理キーがありません");
 
   const title = titleInput.value.trim();
   const url = urlInput.value.trim();
@@ -110,22 +141,12 @@ async function addVideo() {
     return;
   }
 
-  let videoId = null;
+  let m =
+    url.match(/v=([^&]+)/) ||
+    url.match(/youtu\.be\/([^?]+)/) ||
+    url.match(/shorts\/([^?]+)/);
 
-  let m = url.match(/v=([^&]+)/);
-  if (m) videoId = m[1];
-
-  if (!videoId) {
-    m = url.match(/youtu\.be\/([^?]+)/);
-    if (m) videoId = m[1];
-  }
-
-  if (!videoId) {
-    m = url.match(/shorts\/([^?]+)/);
-    if (m) videoId = m[1];
-  }
-
-  if (!videoId) {
+  if (!m) {
     msg.textContent = "YouTube URL が正しくありません";
     return;
   }
@@ -133,7 +154,7 @@ async function addVideo() {
   await db.collection("videos").add({
     key,
     title,
-    videoId,
+    videoId: m[1],
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
