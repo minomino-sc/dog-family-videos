@@ -21,7 +21,7 @@ function getKey() {
 }
 
 /***********************
- * 家族用：動画一覧（検索＋日付折りたたみ＋件数）
+ * 家族用：一覧 + 検索 + 日付件数
  ***********************/
 async function initViewer() {
   const key = getKey();
@@ -33,74 +33,68 @@ async function initViewer() {
     return;
   }
 
-  root.textContent = "読み込み中...";
-
   try {
     const snap = await db
       .collection("videos")
       .where("key", "==", key)
       .get();
 
-    if (snap.empty) {
-      root.textContent = "まだ動画がありません";
-      return;
-    }
-
-    const videos = [];
-    snap.forEach(doc => videos.push(doc.data()));
-
-    function dateLabel(ts) {
-      return ts
-        ? new Date(ts.seconds * 1000).toLocaleDateString()
-        : "日付不明";
-    }
+    const all = [];
+    snap.forEach(d => all.push(d.data()));
 
     function render(list) {
       root.innerHTML = "";
 
+      // 📅 日付ごとにグループ化
       const groups = {};
       list.forEach(v => {
-        const d = dateLabel(v.createdAt);
+        if (!v.createdAt) return;
+        const d = new Date(v.createdAt.seconds * 1000).toLocaleDateString();
         if (!groups[d]) groups[d] = [];
         groups[d].push(v);
       });
 
-      Object.keys(groups).forEach(date => {
-        const count = groups[date].length;
+      Object.keys(groups)
+        .sort((a,b)=>new Date(b)-new Date(a))
+        .forEach(date => {
+          const videos = groups[date];
 
-        const header = document.createElement("div");
-        header.className = "date-header";
-        header.textContent = `📅 ${date}（${count}件）`;
-
-        const box = document.createElement("div");
-        box.style.display = "none";
-
-        header.onclick = () => {
-          box.style.display =
-            box.style.display === "none" ? "block" : "none";
-        };
-
-        groups[date].forEach(v => {
-          const div = document.createElement("div");
-          div.className = "video";
-          div.innerHTML = `
-            <iframe src="https://www.youtube.com/embed/${v.videoId}" allowfullscreen></iframe>
-            <div class="title">${v.title}</div>
+          // 日付ヘッダ
+          const header = document.createElement("div");
+          header.className = "date-header";
+          header.innerHTML = `
+            <span>📅 ${date}</span>
+            <span class="count">${videos.length}件</span>
           `;
-          box.appendChild(div);
-        });
 
-        root.appendChild(header);
-        root.appendChild(box);
-      });
+          const container = document.createElement("div");
+
+          header.onclick = () => {
+            container.style.display =
+              container.style.display === "none" ? "" : "none";
+          };
+
+          videos.forEach(v => {
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+              <iframe src="https://www.youtube.com/embed/${v.videoId}" allowfullscreen></iframe>
+              <div class="title">${v.title}</div>
+            `;
+            container.appendChild(card);
+          });
+
+          root.appendChild(header);
+          root.appendChild(container);
+        });
     }
 
-    render(videos);
+    render(all);
 
     // 🔍 検索
     searchInput.addEventListener("input", () => {
       const q = searchInput.value.trim().toLowerCase();
-      const filtered = videos.filter(v =>
+      const filtered = all.filter(v =>
         v.title.toLowerCase().includes(q)
       );
       render(filtered);
