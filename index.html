@@ -12,10 +12,22 @@
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont;
-      background: #F6EFE6; /* 芝犬カラー */
+      background: #F6EFE6;
       margin: 0;
       padding: 16px;
       color: #3B2F2F;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 🐾 肉球背景 */
+    .paw-bg {
+      position: fixed;
+      right: -40px;
+      bottom: -40px;
+      font-size: 180px;
+      opacity: 0.08;
+      pointer-events: none;
     }
 
     h1 {
@@ -25,7 +37,7 @@
 
     .video {
       background: #FFFFFF;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 12px;
       margin-bottom: 14px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.08);
@@ -34,7 +46,7 @@
     iframe {
       width: 100%;
       aspect-ratio: 16 / 9;
-      border-radius: 10px;
+      border-radius: 12px;
     }
 
     .title {
@@ -49,6 +61,8 @@
   </style>
 </head>
 <body>
+
+<div class="paw-bg">🐾</div>
 
 <h1>🐶 家族用ワンちゃん動画</h1>
 <div id="videos">読み込み中...</div>
