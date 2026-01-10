@@ -21,11 +21,12 @@ function getKey() {
 }
 
 /***********************
- * 家族用：動画一覧表示（安全版）
+ * 家族用：動画一覧表示 + 検索
  ***********************/
 async function initViewer() {
   const key = getKey();
   const root = document.getElementById("videos");
+  const searchInput = document.getElementById("search");
 
   if (!key) {
     root.textContent = "アクセスキーがありません";
@@ -38,47 +39,67 @@ async function initViewer() {
     const snap = await db
       .collection("videos")
       .where("key", "==", key)
-      .get(); // ← orderBy を削除（重要）
-
-    root.innerHTML = "";
+      .get();
 
     if (snap.empty) {
       root.textContent = "まだ動画がありません";
       return;
     }
 
-    snap.forEach(doc => {
-      const v = doc.data();
+    const videos = [];
+    snap.forEach(doc => videos.push(doc.data()));
 
-      const div = document.createElement("div");
-      div.className = "video";
+    function render(list) {
+      root.innerHTML = "";
+      list.forEach(v => {
+        const div = document.createElement("div");
+        div.className = "video";
+        div.innerHTML = `
+          <iframe src="https://www.youtube.com/embed/${v.videoId}" allowfullscreen></iframe>
+          <div class="title">${v.title}</div>
+          <div class="date">
+            ${v.createdAt ? new Date(v.createdAt.seconds * 1000).toLocaleDateString() : ""}
+          </div>
+        `;
+        root.appendChild(div);
+      });
+    }
 
-      div.innerHTML = `
-        <iframe
-          src="https://www.youtube.com/embed/${v.videoId}"
-          allowfullscreen
-        ></iframe>
-        <div class="title">${v.title}</div>
-        <div class="date">
-          ${v.createdAt ? new Date(v.createdAt.seconds * 1000).toLocaleDateString() : ""}
-        </div>
-      `;
+    render(videos);
 
-      root.appendChild(div);
-    });
+    // 🔍 検索機能
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        const q = searchInput.value.trim().toLowerCase();
+        const filtered = videos.filter(v =>
+          v.title.toLowerCase().includes(q)
+        );
+        render(filtered);
+      });
+    }
 
   } catch (e) {
-    console.error("Firestore error:", e);
+    console.error(e);
     root.textContent = "動画の読み込みに失敗しました";
   }
 }
 
 /***********************
- * 管理用：動画登録（ショート対応）
+ * 管理用：動画登録（安全版）
  ***********************/
 async function addVideo() {
+  const titleInput = document.getElementById("title");
+  const urlInput = document.getElementById("url");
+  const msg = document.getElementById("msg");
+
+  // 👇 管理画面以外では何もしない
+  if (!titleInput || !urlInput || !msg) return;
+
   const key = getKey();
-  if (!key) return alert("管理キーがありません");
+  if (!key) {
+    alert("管理キーがありません");
+    return;
+  }
 
   const title = titleInput.value.trim();
   const url = urlInput.value.trim();
